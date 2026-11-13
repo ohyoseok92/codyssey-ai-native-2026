@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>나의 영화 기록</title>
+  <style>
+    :root{--paper:#f7f5ef;--ink:#222a25;--muted:#5a665e;--green:#245846;--line:#d5ddd3;--white:#fff;--gold:#a65d32}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Malgun Gothic",sans-serif}
+    main{width:min(100% - 32px,860px);margin:40px auto 80px}
+    header{border-bottom:2px solid var(--green);padding-bottom:20px;margin-bottom:26px}
+    .eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:800;color:var(--green)}
+    h1{font-size:clamp(29px,6vw,48px);letter-spacing:-.06em;line-height:1.15;margin:7px 0}
+    .intro{color:var(--muted);margin:0}
+    .panel{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 10px 24px #263b2410;margin:24px 0}
+    h2{font-size:20px;margin:0 0 16px;letter-spacing:-.03em}
+    form{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr);gap:14px}
+    label{display:grid;gap:5px;font-weight:700;font-size:14px}
+    label.review{grid-column:1/-1}
+    input,select,textarea{font:inherit;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;background:#fff}
+    textarea{min-height:84px;resize:vertical}
+    input:focus,select:focus,textarea:focus{outline:3px solid #9fc8b6;outline-offset:1px;border-color:var(--green)}
+    button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--green);padding:10px 15px;font-weight:700}
+    .primary{background:var(--green);color:#fff}
+    .secondary{background:#fff;color:var(--green)}
+    .form-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+    #cancel{display:none}
+    #status{min-height:25px;color:var(--green);font-size:14px;margin:10px 0 0}
+    .status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    #undo{font-size:13px;padding:5px 10px;background:#fff;color:var(--green)}
+    .list-heading{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .metrics{color:var(--muted);font-size:14px}
+    .search{display:grid;gap:5px;max-width:360px;margin:16px 0 22px}
+    #search-summary{color:var(--muted);font-size:14px;margin:-10px 0 16px}
+    #records{display:grid;gap:12px;list-style:none;padding:0;margin:0}
+    .record{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px 20px}
+    .record-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+    .record h3{font-size:19px;letter-spacing:-.03em;margin:0;overflow-wrap:anywhere}
+    .rating{color:var(--gold);font-weight:800;white-space:nowrap}
+    .record p{margin:10px 0;overflow-wrap:anywhere}
+    .record-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .record-actions button{font-size:13px;padding:6px 11px;background:#fff;color:var(--green)}
+    .empty{border:1px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+    .note{color:var(--muted);font-size:13px;margin:25px 0}
+    @media(max-width:540px){main{margin-top:22px}form{grid-template-columns:1fr}.panel{padding:18px}.record-head{display:block}.rating{display:block;margin-top:4px}}
+  </style>
+</head>
+<body>
+<main>
+  <header><div class="eyebrow">My film journal</div><h1>나의 영화 기록</h1><p class="intro">본 영화의 느낌을 짧게 남기고, 언제든 다시 찾아보세요.</p></header>
+  <section class="panel" aria-labelledby="form-title">
+    <h2 id="form-title">새 기록</h2>
+    <form id="record-form" novalidate>
+      <label>영화 제목 <input id="title" maxlength="100" autocomplete="off" required placeholder="영화 제목"></label>
+      <label>평점 <select id="rating" required><option value="">선택</option><option value="1">1점</option><option value="2">2점</option><option value="3">3점</option><option value="4">4점</option><option value="5">5점</option></select></label>
+      <label class="review">한줄평 <textarea id="review" maxlength="240" required placeholder="기억하고 싶은 장면이나 느낌"></textarea></label>
+      <div class="form-actions"><button class="primary" id="save" type="submit">기록 저장</button><button class="secondary" id="cancel" type="button">수정 취소</button></div>
+    </form>
+    <div class="status-row"><p id="status" role="status" aria-live="polite"></p><button id="undo" type="button" hidden>삭제 취소</button></div>
+  </section>
+  <section aria-labelledby="records-title">
+    <div class="list-heading"><h2 id="records-title">기록 목록</h2><div class="metrics" id="metrics"></div></div>
+    <label class="search">영화 찾기 <input id="search" type="search" placeholder="제목 검색" autocomplete="off"></label>
+    <p id="search-summary" role="status"></p>
+    <ul id="records"></ul>
+    <p id="empty" class="empty"></p>
+  </section>
+  <p class="note">기록은 이 브라우저에 저장됩니다. 다른 기기나 브라우저에는 자동으로 옮겨지지 않습니다.</p>
+</main>
+<script>
+  const KEY='codyssey-film-journal-v1';
+  const form=document.querySelector('#record-form');
+  const titleInput=document.querySelector('#title');
+  const ratingInput=document.querySelector('#rating');
+  const reviewInput=document.querySelector('#review');
+  const searchInput=document.querySelector('#search');
+  const status=document.querySelector('#status');
+  let records=[];
+  let editingId=null;
+  let lastDeleted=null;
+  try{
+    const stored=JSON.parse(localStorage.getItem(KEY)||'[]');
+    if(Array.isArray(stored)) records=stored.filter(x=>x&&typeof x.id==='string'&&typeof x.title==='string'&&Number.isInteger(x.rating)&&x.rating>=1&&x.rating<=5&&typeof x.review==='string');
+  }catch{status.textContent='저장된 기록을 읽지 못했습니다. 새 기록은 작성할 수 있습니다.'}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(records));return true}catch{status.textContent='브라우저 저장에 실패했습니다. 창을 닫기 전에 내용을 복사해 주세요.';return false}}
+  function resetForm(){form.reset();editingId=null;document.querySelector('#form-title').textContent='새 기록';document.querySelector('#save').textContent='기록 저장';document.querySelector('#cancel').style.display='none'}
+  function render(){
+    const list=document.querySelector('#records');list.replaceChildren();
+    const query=searchInput.value.trim().toLocaleLowerCase();
+    const visible=records.filter(x=>x.title.toLocaleLowerCase().includes(query));
+    document.querySelector('#search-summary').textContent=query?'검색 결과 '+visible.length+'편':'';
+    for(const record of visible){
+      const li=document.createElement('li');li.className='record';
+      const head=document.createElement('div');head.className='record-head';
+      const name=document.createElement('h3');name.textContent=record.title;
+      const rating=document.createElement('span');rating.className='rating';rating.textContent='★ '+record.rating+'/5';
+      head.append(name,rating);
+      const review=document.createElement('p');review.textContent=record.review;
+      const actions=document.createElement('div');actions.className='record-actions';
+      const edit=document.createElement('button');edit.type='button';edit.textContent='수정';edit.setAttribute('aria-label',record.title+' 수정');
+      edit.addEventListener('click',()=>{editingId=record.id;titleInput.value=record.title;ratingInput.value=String(record.rating);reviewInput.value=record.review;document.querySelector('#form-title').textContent='기록 수정';document.querySelector('#save').textContent='수정 저장';document.querySelector('#cancel').style.display='inline-block';status.textContent=record.title+' 기록을 수정 중입니다.';titleInput.focus()});
+      const remove=document.createElement('button');remove.type='button';remove.textContent='삭제';remove.setAttribute('aria-label',record.title+' 삭제');
+      remove.addEventListener('click',()=>{lastDeleted={record,index:records.findIndex(x=>x.id===record.id)};records=records.filter(x=>x.id!==record.id);if(editingId===record.id)resetForm();save();render();document.querySelector('#undo').hidden=false;status.textContent=record.title+' 기록을 삭제했습니다.'});
+      actions.append(edit,remove);li.append(head,review,actions);list.append(li);
+    }
+    const empty=document.querySelector('#empty');empty.textContent=visible.length?'':(query?'검색 결과가 없습니다.':'아직 기록이 없습니다. 첫 영화를 남겨 보세요.');empty.style.display=visible.length?'none':'block';
+    const average=records.length?records.reduce((sum,x)=>sum+x.rating,0)/records.length:0;
+    document.querySelector('#metrics').textContent=records.length+'편 기록 · 평균 '+average.toFixed(1)+'점';
+  }
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    const title=titleInput.value.trim(),review=reviewInput.value.trim(),rating=Number(ratingInput.value);
+    if(!title){status.textContent='영화 제목을 입력해 주세요.';titleInput.focus();return}
+    if(!Number.isInteger(rating)||rating<1||rating>5){status.textContent='평점을 1~5점에서 골라 주세요.';ratingInput.focus();return}
+    if(!review){status.textContent='한줄평을 입력해 주세요.';reviewInput.focus();return}
+    if(editingId){const record=records.find(x=>x.id===editingId);if(record){Object.assign(record,{title,rating,review});status.textContent='기록을 수정했습니다.'}}
+    else{records.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),title,rating,review});status.textContent='기록을 추가했습니다.'}
+    save();resetForm();render();
+  });
+  document.querySelector('#cancel').addEventListener('click',()=>{resetForm();status.textContent='수정을 취소했습니다.'});
+  form.addEventListener('keydown',event=>{if(event.key==='Escape'&&editingId){event.preventDefault();resetForm();status.textContent='수정을 취소했습니다.'}});
+  document.querySelector('#undo').addEventListener('click',()=>{if(!lastDeleted)return;records.splice(Math.min(lastDeleted.index,records.length),0,lastDeleted.record);const title=lastDeleted.record.title;lastDeleted=null;document.querySelector('#undo').hidden=true;save();render();status.textContent=title+' 기록을 복원했습니다.'});
+  searchInput.addEventListener('input',render);
+  render();
+</script>
+</body>
+</html>

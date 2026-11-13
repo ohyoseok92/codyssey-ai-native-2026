@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>나의 영화 기록</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --primary: #1a7f37;
+      --primary-hover: #116329;
+      --danger: #cf222e;
+      --danger-hover: #a40e26;
+      --star: #e3b341;
+      --accent-bg: #eef6f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="text"]:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 127, 55, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 68px;
+    }
+
+    .error-msg {
+      display: none;
+      margin-bottom: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #ffebe9;
+      border: 1px solid rgba(207, 34, 46, 0.35);
+      color: var(--danger);
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .error-msg.visible {
+      display: block;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .btn-danger {
+      background: #fff;
+      color: var(--danger);
+      border-color: var(--border);
+    }
+
+    .btn-danger:hover {
+      background: #ffebe9;
+      border-color: var(--danger);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.82rem;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .search-row input {
+      flex: 1;
+    }
+
+    .movie-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .movie-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .movie-item.editing {
+      border-color: var(--primary);
+      background: var(--accent-bg);
+    }
+
+    .movie-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .movie-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      word-break: break-word;
+    }
+
+    .movie-rating {
+      white-space: nowrap;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #9a6700;
+      background: #fff8c5;
+      border: 1px solid #eed888;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .movie-review {
+      margin: 0 0 10px;
+      font-size: 0.94rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .movie-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .movie-date {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    footer {
+      margin-top: 20px;
+      padding: 12px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 12px;
+      }
+      .stats {
+        gap: 8px;
+      }
+      .search-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>나의 영화 기록</h1>
+      <p class="subtitle">본 영화의 제목, 평점(1~5점), 한줄평을 남기고 바로 찾아보세요.</p>
+    </header>
+
+    <section class="stats" aria-label="기록 요약">
+      <div class="stat-box">
+        <div class="stat-label">기록 수</div>
+        <div class="stat-value" id="totalCount">0편</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">평균 평점</div>
+        <div class="stat-value" id="avgRating">0.0점</div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="formHeading">
+      <h2 class="card-title" id="formHeading">새 영화 기록</h2>
+      <form id="movieForm" novalidate>
+        <div class="form-group">
+          <label for="titleInput">영화 제목</label>
+          <input type="text" id="titleInput" placeholder="예: 헤어질 결심" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label for="ratingInput">평점 (1~5점)</label>
+          <select id="ratingInput">
+            <option value="5">★★★★★ (5점)</option>
+            <option value="4">★★★★☆ (4점)</option>
+            <option value="3" selected>★★★☆☆ (3점)</option>
+            <option value="2">★★☆☆☆ (2점)</option>
+            <option value="1">★☆☆☆☆ (1점)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reviewInput">한줄평</label>
+          <textarea id="reviewInput" placeholder="인상 깊었던 장면이나 감상을 짧게 남겨보세요." maxlength="300"></textarea>
+        </div>
+
+        <div id="errorBox" class="error-msg" role="alert"></div>
+
+        <div class="btn-row">
+          <button type="submit" class="btn-primary" id="submitBtn">저장</button>
+          <button type="button" class="btn-secondary" id="cancelEditBtn" style="display: none;">수정 취소</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" aria-label="기록 검색">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label for="searchInput">제목 검색</label>
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="제목으로 기록 찾기..." />
+          <button type="button" class="btn-secondary" id="clearSearchBtn">검색어 지우기</button>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="영화 기록 목록">
+      <ul class="movie-list" id="movieList"></ul>
+      <div class="empty-state" id="emptyState" style="display: none;"></div>
+    </section>
+
+    <footer>
+      현재 브라우저(localStorage)에만 자동 저장되며 기기 간 동기화, 포스터·상영 정보 제공, 계정 및 공동 편집은 지원하지 않습니다.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'my_movie_records_v1';
+
+      const form = document.getElementById('movieForm');
+      const formHeading = document.getElementById('formHeading');
+      const titleInput = document.getElementById('titleInput');
+      const ratingInput = document.getElementById('ratingInput');
+      const reviewInput = document.getElementById('reviewInput');
+      const errorBox = document.getElementById('errorBox');
+      const submitBtn = document.getElementById('submitBtn');
+      const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+      const searchInput = document.getElementById('searchInput');
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+      const totalCountEl = document.getElementById('totalCount');
+      const avgRatingEl = document.getElementById('avgRating');
+      const movieListEl = document.getElementById('movieList');
+      const emptyStateEl = document.getElementById('emptyState');
+
+      let movies = loadMovies();
+      let editingId = null;
+
+      function loadMovies() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveMovies() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+      }
+
+      function showError(message) {
+        errorBox.textContent = message;
+        errorBox.classList.add('visible');
+      }
+
+      function clearError() {
+        errorBox.textContent = '';
+        errorBox.classList.remove('visible');
+      }
+
+      function formatStars(rating) {
+        const r = Math.min(5, Math.max(1, Number(rating) || 1));
+        return '★'.repeat(r) + '☆'.repeat(5 - r) + ` (${r}점)`;
+      }
+
+      function formatDate(timestamp) {
+        const d = new Date(timestamp);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}.${mm}.${dd}`;
+      }
+
+      function resetForm() {
+        editingId = null;
+        form.reset();
+        ratingInput.value = '3';
+        formHeading.textContent = '새 영화 기록';
+        submitBtn.textContent = '저장';
+        cancelEditBtn.style.display = 'none';
+        clearError();
+      }
+
+      function startEdit(id) {
+        const target = movies.find((m) => m.id === id);
+        if (!target) return;
+
+        editingId = id;
+        titleInput.value = target.title;
+        ratingInput.value = String(target.rating);
+        reviewInput.value = target.review;
+
+        formHeading.textContent = '영화 기록 수정';
+        submitBtn.textContent = '수정 저장';
+        cancelEditBtn.style.display = 'inline-block';
+        clearError();
+        render();
+        titleInput.focus();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function deleteMovie(id) {
+        movies = movies.filter((m) => m.id !== id);
+        if (editingId === id) {
+          resetForm();
+        }
+        saveMovies();
+        render();
+      }
+
+      function updateStats() {
+        const count = movies.length;
+        totalCountEl.textContent = `${count}편`;
+
+        if (count === 0) {
+          avgRatingEl.textContent = '0.0점';
+          return;
+        }
+
+        const sum = movies.reduce((acc, item) => acc + Number(item.rating), 0);
+        const avg = (sum / count).toFixed(1);
+        avgRatingEl.textContent = `${avg}점`;
+      }
+
+      function render() {
+        updateStats();
+
+        const keyword = searchInput.value.trim().toLowerCase();
+        const filtered = keyword
+          ? movies.filter((m) => m.title.toLowerCase().includes(keyword))
+          : movies;
+
+        movieListEl.innerHTML = '';
+
+        if (filtered.length === 0) {
+          emptyStateEl.style.display = 'block';
+          emptyStateEl.textContent =
+            movies.length === 0
+              ? '아직 저장된 영화 기록이 없습니다. 위 입력칸에서 첫 영화를 기록해 보세요.'
+              : `'${searchInput.value.trim()}'에 해당하는 영화 기록이 없습니다.`;
+          return;
+        }
+
+        emptyStateEl.style.display = 'none';
+
+        filtered.forEach((movie) => {
+          const li = document.createElement('li');
+          li.className = 'movie-item' + (movie.id === editingId ? ' editing' : '');
+
+          const header = document.createElement('div');
+          header.className = 'movie-header';
+
+          const titleEl = document.createElement('div');
+          titleEl.className = 'movie-title';
+          titleEl.textContent = movie.title;
+
+          const ratingEl = document.createElement('span');
+          ratingEl.className = 'movie-rating';
+          ratingEl.textContent = formatStars(movie.rating);
+
+          header.appendChild(titleEl);
+          header.appendChild(ratingEl);
+
+          const reviewEl = document.createElement('p');
+          reviewEl.className = 'movie-review';
+          reviewEl.textContent = movie.review;
+
+          const footer = document.createElement('div');
+          footer.className = 'movie-footer';
+
+          const dateEl = document.createElement('span');
+          dateEl.className = 'movie-date';
+          dateEl.textContent = movie.updatedAt
+            ? `${formatDate(movie.updatedAt)} 수정됨`
+            : `${formatDate(movie.createdAt)} 기록됨`;
+
+          const actions = document.createElement('div');
+          actions.className = 'btn-row';
+
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'btn-secondary btn-sm';
+          editBtn.textContent = '수정';
+          editBtn.addEventListener('click', () => startEdit(movie.id));
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.type = 'button';
+          deleteBtn.className = 'btn-danger btn-sm';
+          deleteBtn.textContent = '삭제';
+          deleteBtn.addEventListener('click', () => deleteMovie(movie.id));
+
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+
+          footer.appendChild(dateEl);
+          footer.appendChild(actions);
+
+          li.appendChild(header);
+          li.appendChild(reviewEl);
+          li.appendChild(footer);
+
+          movieListEl.appendChild(li);
+        });
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const title = titleInput.value.trim();
+        const rating = Number(ratingInput.value);
+        const review = reviewInput.value.trim();
+
+        if (!title && !review) {
+          showError('영화 제목과 한줄평이 모두 비어 있습니다. 두 항목을 모두 입력해 주세요.');
+          titleInput.focus();
+          return;
+        }
+        if (!title) {
+          showError('영화 제목이 비어 있어 저장할 수 없습니다. 제목을 입력해 주세요.');
+          titleInput.focus();
+          return;
+        }
+        if (!review) {
+          showError('한줄평이 비어 있어 저장할 수 없습니다. 한줄평을 입력해 주세요.');
+          reviewInput.focus();
+          return;
+        }
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+          showError('평점은 1점에서 5점 사이로 선택해 주세요.');
+          ratingInput.focus();
+          return;
+        }
+
+        const now = Date.now();
+
+        if (editingId) {
+          movies = movies.map((m) =>
+            m.id === editingId
+              ? { ...m, title, rating, review, updatedAt: now }
+              : m
+          );
+        } else {
+          const newRecord = {
+            id: String(now) + '_' + Math.random().toString(36).slice(2, 7),
+            title,
+            rating,
+            review,
+            createdAt: now,
+            updatedAt: null
+          };
+          movies.unshift(newRecord);
+        }
+
+        saveMovies();
+        resetForm();
+        render();
+      });
+
+      cancelEditBtn.addEventListener('click', function () {
+        resetForm();
+        render();
+      });
+
+      searchInput.addEventListener('input', render);
+
+      clearSearchBtn.addEventListener('click', function () {
+        searchInput.value = '';
+        render();
+        searchInput.focus();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

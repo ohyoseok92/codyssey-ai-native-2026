@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>내 영화 티어리스트 · Codex</title>
+  <style>
+    :root{--bg:#f5f4ee;--ink:#202b25;--line:#d6ddd4;--green:#285e4b;--card:#fff}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Malgun Gothic",sans-serif}
+    main{width:min(100% - 32px,840px);margin:36px auto 60px}
+    h1{margin:0;font-size:clamp(27px,5vw,42px);letter-spacing:-.05em} p{color:#5d685f}
+    form{display:flex;gap:8px;margin:24px 0 6px;flex-wrap:wrap}
+    input{flex:1 1 220px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+    button{font:inherit;cursor:pointer} .toolbar button{border-radius:10px;border:1px solid var(--green);padding:10px 14px;background:var(--green);color:white;font-weight:700}
+    .toolbar .reset{background:white;color:var(--green)}
+    #message{min-height:25px;color:var(--green);font-size:14px}
+    .board{display:grid;gap:10px}
+    .lane{display:flex;min-height:92px;background:var(--card);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+    .lane.over{outline:3px solid #79ad94}
+    .target{flex:0 0 88px;background:var(--green);color:white;border:0;padding:12px 5px;font-size:20px;font-weight:800}
+    .target small{display:block;font-size:11px;font-weight:500}
+    .S .target{background:#a14935}.A .target{background:#b17539}.B .target{background:#285e4b}.C .target{background:#627259}
+    .cards{display:flex;gap:9px;flex-wrap:wrap;align-content:flex-start;padding:12px;min-width:0;flex:1}
+    .card{background:#edf2e9;color:var(--ink);border:1px solid #d1ddcf;border-radius:9px;min-height:54px;padding:7px 10px;max-width:175px;overflow-wrap:anywhere;text-align:left;line-height:1.3;cursor:grab}
+    .card[aria-pressed="true"]{outline:3px solid #a14935;outline-offset:2px}
+    .note{font-size:13px} :focus-visible{outline:3px solid #c56d36;outline-offset:2px}
+    @media(max-width:500px){.target{flex-basis:70px}.cards{padding:9px}.card{max-width:150px}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>내 영화 티어리스트</h1>
+  <p>카드를 선택하고 등급 글자를 누르거나, 원하는 칸으로 끌어 놓으세요.</p>
+  <form class="toolbar" id="add-form"><input id="new-title" aria-label="새 영화 제목" maxlength="80" placeholder="새 영화 제목"><button type="submit">영화 추가</button><button type="button" class="reset" id="reset">처음으로</button></form>
+  <p id="message" role="status" aria-live="polite">영화를 분류해 보세요.</p>
+  <section id="board" class="board" aria-label="영화 등급"></section>
+  <p class="note">배치는 이 브라우저에만 저장됩니다. 다른 브라우저나 기기에는 자동으로 동기화되지 않습니다.</p>
+</main>
+<script>
+  const KEY='codyssey-m1-codex-v1';
+  const LEVELS=['S','A','B','C','미분류'];
+  const TITLES=['기생충','인터스텔라','라라랜드','센과 치히로의 행방불명','어벤져스: 엔드게임','범죄도시','타이타닉','토이 스토리'];
+  const initial=()=>TITLES.map((title,index)=>({id:'movie-'+index,title,level:'미분류'}));
+  let movies=initial(),selected=null,nextId=TITLES.length;
+  try{const stored=JSON.parse(localStorage.getItem(KEY)||'null');if(stored&&Array.isArray(stored.movies)&&Number.isSafeInteger(stored.nextId)&&stored.movies.every(m=>m&&typeof m.id==='string'&&typeof m.title==='string'&&LEVELS.includes(m.level))){movies=stored.movies;nextId=stored.nextId}}catch{}
+  const message=document.querySelector('#message');
+  function save(){try{localStorage.setItem(KEY,JSON.stringify({movies,nextId}))}catch{message.textContent='브라우저 저장에 실패했습니다. 현재 배치를 확인해 주세요.'}}
+  function move(id,level){const movie=movies.find(m=>m.id===id);if(!movie||!LEVELS.includes(level))return;movie.level=level;selected=null;save();draw();message.textContent=movie.title+' → '+level}
+  function draw(){
+    const board=document.querySelector('#board');board.replaceChildren();
+    for(const level of LEVELS){
+      const lane=document.createElement('div');lane.className='lane '+(level==='미분류'?'pool':level);
+      const target=document.createElement('button');target.type='button';target.className='target';target.setAttribute('aria-label',level+'로 옮기기');target.textContent=level;
+      const count=document.createElement('small');count.textContent=movies.filter(m=>m.level===level).length+'편';target.append(count);
+      target.addEventListener('click',()=>selected?move(selected,level):message.textContent='먼저 영화를 선택해 주세요.');
+      const cards=document.createElement('div');cards.className='cards';cards.dataset.level=level;
+      cards.addEventListener('dragover',event=>{event.preventDefault();lane.classList.add('over')});
+      cards.addEventListener('dragleave',()=>lane.classList.remove('over'));
+      cards.addEventListener('drop',event=>{event.preventDefault();lane.classList.remove('over');move(event.dataTransfer.getData('text/plain'),level)});
+      cards.addEventListener('click',()=>{if(selected)move(selected,level)});
+      for(const movie of movies.filter(m=>m.level===level)){
+        const card=document.createElement('button');card.type='button';card.className='card';card.draggable=true;card.textContent=movie.title;card.setAttribute('aria-pressed',String(selected===movie.id));
+        card.addEventListener('click',event=>{event.stopPropagation();selected=selected===movie.id?null:movie.id;draw();message.textContent=selected?movie.title+' 선택됨':'선택 해제됨'});
+        card.addEventListener('dragstart',event=>{event.dataTransfer.setData('text/plain',movie.id)});
+        cards.append(card);
+      }
+      lane.append(target,cards);board.append(lane);
+    }
+  }
+  document.querySelector('#add-form').addEventListener('submit',event=>{event.preventDefault();const input=document.querySelector('#new-title'),title=input.value.trim();if(!title){message.textContent='영화 제목을 입력해 주세요.';input.focus();return}if(movies.some(m=>m.title.toLocaleLowerCase()===title.toLocaleLowerCase())){message.textContent='이미 있는 영화입니다.';return}movies.push({id:'movie-'+nextId++,title,level:'미분류'});save();draw();input.value='';message.textContent='영화를 추가했습니다.'});
+  document.querySelector('#reset').addEventListener('click',()=>{movies=initial();nextId=TITLES.length;selected=null;document.querySelector('#new-title').value='';save();draw();message.textContent='처음 목록으로 돌아왔습니다.'});
+  draw();
+</script>
+</body>
+</html>

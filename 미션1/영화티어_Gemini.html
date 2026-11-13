@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 영화 티어리스트</title>
+  <style>
+    :root {
+      --bg: #121418;
+      --surface: #1b1f26;
+      --surface-2: #242a34;
+      --border: #323946;
+      --text: #f1f3f5;
+      --text-muted: #9aa4b2;
+      --accent: #4dabf7;
+      --danger: #ff6b6b;
+      --s-color: #ff6b6b;
+      --a-color: #ffa94d;
+      --b-color: #ffd43b;
+      --c-color: #69db7c;
+      --unranked-color: #868e96;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", sans-serif;
+      line-height: 1.4;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 6px 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .notice {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      word-break: keep-all;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: stretch;
+    }
+
+    .add-form {
+      display: flex;
+      flex: 1 1 260px;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .add-form input {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .add-form input:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.15s ease, transform 0.05s ease;
+    }
+
+    button:hover {
+      background: #2e3643;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0b1118;
+      border-color: transparent;
+    }
+
+    .btn-primary:hover {
+      background: #74c0fc;
+    }
+
+    .btn-reset {
+      color: var(--danger);
+      border-color: rgba(255, 107, 107, 0.35);
+    }
+
+    .btn-reset:hover {
+      background: rgba(255, 107, 107, 0.12);
+    }
+
+    .feedback {
+      min-height: 20px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      color: var(--danger);
+    }
+
+    .feedback.info {
+      color: var(--accent);
+    }
+
+    .helper-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .selected-status {
+      color: var(--text-muted);
+      word-break: keep-all;
+    }
+
+    .selected-status strong {
+      color: var(--accent);
+    }
+
+    .quick-move-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .quick-move-buttons button {
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+
+    .quick-move-buttons button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .tier-board {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .tier-row {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      min-height: 76px;
+    }
+
+    .tier-label {
+      width: 68px;
+      flex: 0 0 68px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #111317;
+      cursor: pointer;
+      user-select: none;
+      text-align: center;
+      padding: 8px 4px;
+    }
+
+    .tier-label small {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    .tier-label[data-tier="S"] { background-color: var(--s-color); }
+    .tier-label[data-tier="A"] { background-color: var(--a-color); }
+    .tier-label[data-tier="B"] { background-color: var(--b-color); }
+    .tier-label[data-tier="C"] { background-color: var(--c-color); }
+
+    .tier-dropzone {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      transition: background-color 0.15s ease, outline-color 0.15s ease;
+    }
+
+    .tier-dropzone.drag-over {
+      background-color: rgba(77, 171, 247, 0.14);
+      outline: 2px dashed var(--accent);
+      outline-offset: -4px;
+    }
+
+    .tier-dropzone.selectable-target {
+      cursor: pointer;
+    }
+
+    .tier-dropzone.selectable-target:hover {
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .unranked-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .unranked-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .unranked-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--unranked-color);
+      color: #111317;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .unranked-dropzone {
+      min-height: 88px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 8px;
+      padding: 12px;
+      transition: background-color 0.15s ease;
+    }
+
+    .unranked-dropzone.drag-over {
+      background-color: rgba(77, 171, 247, 0.14);
+      outline: 2px dashed var(--accent);
+      outline-offset: -4px;
+    }
+
+    .empty-hint {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      user-select: none;
+    }
+
+    .movie-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 8px 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: grab;
+      user-select: none;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      transition: border-color 0.12s ease, background-color 0.12s ease, transform 0.12s ease;
+    }
+
+    .movie-card:hover {
+      border-color: #5c677a;
+      background: #2b323e;
+    }
+
+    .movie-card.selected {
+      border-color: var(--accent);
+      background: rgba(77, 171, 247, 0.18);
+      box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.25);
+    }
+
+    .movie-card.dragging {
+      opacity: 0.45;
+      cursor: grabbing;
+    }
+
+    @media (max-width: 540px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 1.25rem;
+      }
+
+      .tier-row {
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .tier-label {
+        width: 100%;
+        flex: none;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 8px 12px;
+        font-size: 1.1rem;
+      }
+
+      .tier-label small {
+        margin-top: 0;
+        font-size: 0.75rem;
+      }
+
+      .tier-dropzone,
+      .unranked-dropzone {
+        padding: 10px;
+        min-height: 62px;
+      }
+
+      .add-form {
+        flex: 1 1 100%;
+      }
+
+      .btn-reset {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>내 영화 티어리스트</h1>
+      <p class="subtitle">본 영화를 취향대로 S / A / B / C 등급으로 분류해 보세요.</p>
+      <div class="notice">
+        현재 사용 중인 브라우저의 로컬 저장소(localStorage)에 자동 저장되며, 다른 브라우저나 기기와는 동기화되지 않습니다.
+      </div>
+    </header>
+
+    <section class="controls" aria-label="영화 추가 및 초기화">
+      <form class="add-form" id="addForm">
+        <input
+          type="text"
+          id="movieInput"
+          placeholder="추가할 영화 제목 입력"
+          autocomplete="off"
+          aria-label="영화 제목 입력"
+        />
+        <button type="submit" class="btn-primary">추가</button>
+      </form>
+      <button type="button" class="btn-reset" id="resetBtn">처음으로</button>
+    </section>
+
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+
+    <section class="helper-bar" aria-label="선택한 영화 등급 이동">
+      <div class="selected-status" id="selectedStatus">
+        영화를 클릭해 선택한 뒤 등급 칸이나 아래 버튼을 누르거나, 드래그 앤 드롭으로 옮기세요.
+      </div>
+      <div class="quick-move-buttons" id="quickMoveButtons">
+        <button type="button" data-move-tier="S" disabled>S로 이동</button>
+        <button type="button" data-move-tier="A" disabled>A로 이동</button>
+        <button type="button" data-move-tier="B" disabled>B로 이동</button>
+        <button type="button" data-move-tier="C" disabled>C로 이동</button>
+        <button type="button" data-move-tier="UNRANKED" disabled>미분류로 이동</button>
+      </div>
+    </section>
+
+    <main class="tier-board" aria-label="등급표">
+      <div class="tier-row" data-tier-row="S">
+        <div class="tier-label" data-tier="S" role="button" tabindex="0" aria-label="S 등급으로 이동">
+          <span>S</span>
+          <small>클릭 이동</small>
+        </div>
+        <div class="tier-dropzone" data-zone="S"></div>
+      </div>
+
+      <div class="tier-row" data-tier-row="A">
+        <div class="tier-label" data-tier="A" role="button" tabindex="0" aria-label="A 등급으로 이동">
+          <span>A</span>
+          <small>클릭 이동</small>
+        </div>
+        <div class="tier-dropzone" data-zone="A"></div>
+      </div>
+
+      <div class="tier-row" data-tier-row="B">
+        <div class="tier-label" data-tier="B" role="button" tabindex="0" aria-label="B 등급으로 이동">
+          <span>B</span>
+          <small>클릭 이동</small>
+        </div>
+        <div class="tier-dropzone" data-zone="B"></div>
+      </div>
+
+      <div class="tier-row" data-tier-row="C">
+        <div class="tier-label" data-tier="C" role="button" tabindex="0" aria-label="C 등급으로 이동">
+          <span>C</span>
+          <small>클릭 이동</small>
+        </div>
+        <div class="tier-dropzone" data-zone="C"></div>
+      </div>
+    </main>
+
+    <section class="unranked-section" aria-label="미분류 영화 목록">
+      <div class="unranked-header" id="unrankedHeader" role="button" tabindex="0" aria-label="미분류 칸으로 이동">
+        <div class="unranked-title">
+          <span>미분류</span>
+          <span class="badge" id="unrankedCount">0</span>
+        </div>
+        <span class="empty-hint">선택 후 클릭 시 미분류로 이동</span>
+      </div>
+      <div class="unranked-dropzone" data-zone="UNRANKED"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "my_movie_tierlist_v1";
+      const VALID_TIERS = ["S", "A", "B", "C", "UNRANKED"];
+      const DEFAULT_MOVIES = [
+        "기생충",
+        "인터스텔라",
+        "라라랜드",
+        "센과 치히로의 행방불명",
+        "어벤져스: 엔드게임",
+        "범죄도시",
+        "타이타닉",
+        "토이 스토리"
+      ];
+
+      let movies = [];
+      let selectedId = null;
+      let draggedId = null;
+
+      const addForm = document.getElementById("addForm");
+      const movieInput = document.getElementById("movieInput");
+      const resetBtn = document.getElementById("resetBtn");
+      const feedbackEl = document.getElementById("feedback");
+      const selectedStatusEl = document.getElementById("selectedStatus");
+      const quickMoveButtons = document.querySelectorAll("[data-move-tier]");
+      const dropzones = document.querySelectorAll("[data-zone]");
+      const tierLabels = document.querySelectorAll(".tier-label[data-tier]");
+      const unrankedHeader = document.getElementById("unrankedHeader");
+      const unrankedCountEl = document.getElementById("unrankedCount");
+
+      function normalizeTitle(title) {
+        return title.trim().replace(/\s+/g, " ");
+      }
+
+      function createDefaultState() {
+        return DEFAULT_MOVIES.map((title, index) => ({
+          id: "default-" + index + "-" + title,
+          title: title,
+          tier: "UNRANKED"
+        }));
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(movies));
+        } catch (e) {
+          showFeedback("브라우저 저장 공간에 저장하지 못했습니다.", false);
+        }
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            movies = createDefaultState();
+            saveState();
+            return;
+          }
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) {
+            movies = createDefaultState();
+            saveState();
+            return;
+          }
+
+          const seen = new Set();
+          const cleaned = [];
+          for (const item of parsed) {
+            if (!item || typeof item.title !== "string") continue;
+            const cleanTitle = normalizeTitle(item.title);
+            const key = cleanTitle.toLowerCase();
+            if (!cleanTitle || seen.has(key)) continue;
+            seen.add(key);
+            const tier = VALID_TIERS.includes(item.tier) ? item.tier : "UNRANKED";
+            cleaned.push({
+              id: typeof item.id === "string" && item.id ? item.id : "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+              title: cleanTitle,
+              tier: tier
+            });
+          }
+
+          movies = cleaned.length > 0 ? cleaned : createDefaultState();
+          saveState();
+        } catch (e) {
+          movies = createDefaultState();
+          saveState();
+        }
+      }
+
+      function showFeedback(message, isInfo) {
+        feedbackEl.textContent = message || "";
+        feedbackEl.className = isInfo ? "feedback info" : "feedback";
+      }
+
+      function moveMovieToTier(movieId, targetTier) {
+        if (!movieId || !VALID_TIERS.includes(targetTier)) return;
+        const index = movies.findIndex((m) => m.id === movieId);
+        if (index === -1) return;
+
+        const [targetMovie] = movies.splice(index, 1);
+        targetMovie.tier = targetTier;
+        movies.push(targetMovie);
+
+        saveState();
+        render();
+      }
+
+      function updateSelectionUI() {
+        const selectedMovie = movies.find((m) => m.id === selectedId) || null;
+        if (!selectedMovie) {
+          selectedId = null;
+          selectedStatusEl.innerHTML = "영화를 클릭해 선택한 뒤 등급 칸이나 아래 버튼을 누르거나, 드래그 앤 드롭으로 옮기세요.";
+          quickMoveButtons.forEach((btn) => {
+            btn.disabled = true;
+          });
+          dropzones.forEach((zone) => zone.classList.remove("selectable-target"));
+          return;
+        }
+
+        const currentLabel = selectedMovie.tier === "UNRANKED" ? "미분류" : selectedMovie.tier + " 등급";
+        selectedStatusEl.innerHTML =
+          "선택됨: <strong>" + escapeHtml(selectedMovie.title) + "</strong> (현재: " + currentLabel + ") — 이동할 등급을 누르세요.";
+
+        quickMoveButtons.forEach((btn) => {
+          const tier = btn.getAttribute("data-move-tier");
+          btn.disabled = tier === selectedMovie.tier;
+        });
+
+        dropzones.forEach((zone) => zone.classList.add("selectable-target"));
+      }
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function createMovieCard(movie) {
+        const card = document.createElement("div");
+        card.className = "movie-card" + (movie.id === selectedId ? " selected" : "");
+        card.textContent = movie.title;
+        card.setAttribute("draggable", "true");
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("aria-pressed", movie.id === selectedId ? "true" : "false");
+        card.dataset.id = movie.id;
+
+        card.addEventListener("click", function (e) {
+          e.stopPropagation();
+          selectedId = selectedId === movie.id ? null : movie.id;
+          showFeedback("", false);
+          render();
+        });
+
+        card.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            selectedId = selectedId === movie.id ? null : movie.id;
+            showFeedback("", false);
+            render();
+          }
+        });
+
+        card.addEventListener("dragstart", function (e) {
+          draggedId = movie.id;
+          card.classList.add("dragging");
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", movie.id);
+          }
+        });
+
+        card.addEventListener("dragend", function () {
+          draggedId = null;
+          card.classList.remove("dragging");
+          dropzones.forEach((z) => z.classList.remove("drag-over"));
+        });
+
+        return card;
+      }
+
+      function render() {
+        dropzones.forEach((zone) => {
+          const tier = zone.getAttribute("data-zone");
+          zone.innerHTML = "";
+          const tierMovies = movies.filter((m) => m.tier === tier);
+
+          if (tierMovies.length === 0) {
+            const hint = document.createElement("span");
+            hint.className = "empty-hint";
+            hint.textContent = tier === "UNRANKED" ? "미분류 영화가 없습니다." : "비어 있음";
+            zone.appendChild(hint);
+          } else {
+            tierMovies.forEach((movie) => {
+              zone.appendChild(createMovieCard(movie));
+            });
+          }
+        });
+
+        const unrankedCount = movies.filter((m) => m.tier === "UNRANKED").length;
+        unrankedCountEl.textContent = String(unrankedCount);
+
+        updateSelectionUI();
+      }
+
+      addForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const cleanTitle = normalizeTitle(movieInput.value);
+
+        if (!cleanTitle) {
+          showFeedback("영화 제목을 입력해 주세요. 빈 제목은 추가할 수 없습니다.", false);
+          movieInput.focus();
+          return;
+        }
+
+        const isDuplicate = movies.some(
+          (m) => m.title.toLowerCase() === cleanTitle.toLowerCase()
+        );
+        if (isDuplicate) {
+          showFeedback("이미 목록에 있는 영화 제목입니다.", false);
+          movieInput.focus();
+          movieInput.select();
+          return;
+        }
+
+        const newMovie = {
+          id: "movie-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+          title: cleanTitle,
+          tier: "UNRANKED"
+        };
+
+        movies.push(newMovie);
+        selectedId = newMovie.id;
+        movieInput.value = "";
+        showFeedback("'" + cleanTitle + "' 영화가 미분류 칸에 추가되었습니다.", true);
+        saveState();
+        render();
+      });
+
+      resetBtn.addEventListener("click", function () {
+        movies = createDefaultState();
+        selectedId = null;
+        draggedId = null;
+        saveState();
+        showFeedback("초기화되었습니다. 기본 영화 8편이 모두 미분류 칸으로 돌아갔습니다.", true);
+        render();
+      });
+
+      quickMoveButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+          if (!selectedId) return;
+          const targetTier = btn.getAttribute("data-move-tier");
+          moveMovieToTier(selectedId, targetTier);
+          showFeedback("", false);
+        });
+      });
+
+      tierLabels.forEach((label) => {
+        const handleLabelActivate = function () {
+          if (!selectedId) {
+            showFeedback("먼저 이동할 영화 카드를 클릭해 선택해 주세요.", false);
+            return;
+          }
+          const targetTier = label.getAttribute("data-tier");
+          moveMovieToTier(selectedId, targetTier);
+          showFeedback("", false);
+        };
+
+        label.addEventListener("click", handleLabelActivate);
+        label.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleLabelActivate();
+          }
+        });
+      });
+
+      function handleUnrankedHeaderActivate() {
+        if (!selectedId) {
+          showFeedback("먼저 이동할 영화 카드를 클릭해 선택해 주세요.", false);
+          return;
+        }
+        moveMovieToTier(selectedId, "UNRANKED");
+        showFeedback("", false);
+      }
+
+      unrankedHeader.addEventListener("click", handleUnrankedHeaderActivate);
+      unrankedHeader.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleUnrankedHeaderActivate();
+        }
+      });
+
+      dropzones.forEach((zone) => {
+        zone.addEventListener("click", function () {
+          if (!selectedId) return;
+          const targetTier = zone.getAttribute("data-zone");
+          moveMovieToTier(selectedId, targetTier);
+          showFeedback("", false);
+        });
+
+        zone.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = "move";
+          }
+          zone.classList.add("drag-over");
+        });
+
+        zone.addEventListener("dragleave", function (e) {
+          if (!zone.contains(e.relatedTarget)) {
+            zone.classList.remove("drag-over");
+          }
+        });
+
+        zone.addEventListener("drop", function (e) {
+          e.preventDefault();
+          zone.classList.remove("drag-over");
+          const transferredId = e.dataTransfer ? e.dataTransfer.getData("text/plain") : "";
+          const targetId = draggedId || transferredId;
+          const targetTier = zone.getAttribute("data-zone");
+          if (targetId && targetTier) {
+            selectedId = targetId;
+            moveMovieToTier(targetId, targetTier);
+            showFeedback("", false);
+          }
+        });
+      });
+
+      loadState();
+      render();
+    })();
+  </script>
+</body>
+</html>
